@@ -494,19 +494,8 @@ checkAbort() {
 # encode URL escaping
 rawUrlEncode() {
         local string="${1}"
-        local strlen=${#string}
-        local encoded=""
-        local pos c o
-
-        for (( pos=0 ; pos<strlen ; pos++ )); do
-                c=${string:$pos:1}
-                case "$c" in
-                        [-_.~a-zA-Z0-9] ) o="${c}" ;;
-                        * )               printf -v o '%%%02x' "'$c"
-                esac
-                encoded+="${o}"
-        done
-        echo "${encoded}"    # You can either set a return variable (FASTER) 
+        local encoded=$(printf %s "${string}" | jq -sRr @uri | sed 's/%2F/\//g')
+        echo "${encoded}"    # You can either set a return variable (FASTER)
         REPLY="${encoded}"   #+or echo the result (EASIER)... or both... :p
 }
 
@@ -552,7 +541,7 @@ createDir() {
         isEmpty "$1" && initError 'Error! Cannot create folder with empty name.'
         getScreenSize
         logSameLine "$1 > "
-        eout="$(escapeChars "$1")"
+        eout="$(rawUrlEncode "$1")"
         #echo "$CURLBIN"$INSECURE --silent -X MKCOL -u "$FOLDERTOKEN":"$PASSWORD" -H "$HEADER" "$CLOUDURL/$PUBSUFFIX$INNERPATH/$1" 
         cstat="$(createDirRun "$eout" 2>&1)"
         #echo " -- $cstat"
@@ -654,7 +643,7 @@ sendFile() {
         fi
         
         getScreenSize
-        eout="$(escapeChars "$OUTFILE")"
+        eout="$(rawUrlEncode "$OUTFILE")"
         # Send file
         #echo "$CURLBIN"$INSECURE$VERBOSE -T \""$1"\" -u \""$FOLDERTOKEN":"$PASSWORD"\" -H \""$HEADER"\" \""$CLOUDURL/$PUBSUFFIX$INNERPATH/$eout"\"
         #"$CURLBIN"$LIMITCMD$INSECURE$VERBOSE$GLOBCMD -T "$1" -u "$FOLDERTOKEN":"$PASSWORD" -H "$HEADER" "$CLOUDURL/$PUBSUFFIX$INNERPATH/$eout" | cat ; test ${PIPESTATUS[0]} -eq 0
